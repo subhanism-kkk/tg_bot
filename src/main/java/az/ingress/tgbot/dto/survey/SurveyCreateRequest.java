@@ -10,5 +10,5 @@ public class SurveyCreateRequest {
     private String title;
 
     private String description;
-    private Boolean isActive = false;
+    private Boolean isActive = true;
 }

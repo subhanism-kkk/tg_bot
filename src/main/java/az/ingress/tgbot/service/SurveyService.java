@@ -12,4 +12,6 @@ public interface SurveyService {
     SurveyResponse getById(Long id);
     List<SurveyResponse> getAll();
     void delete(Long id);
+    void activate(Long id);
+    void deactivate(Long id);
 }

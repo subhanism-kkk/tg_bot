@@ -14,7 +14,6 @@ public interface QuestionMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "step", ignore = true)
-    @Mapping(target = "options", ignore = true)
     Question toEntity(QuestionCreateRequest request);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
