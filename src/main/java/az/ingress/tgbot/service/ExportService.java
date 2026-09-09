@@ -1,4 +1,7 @@
 package az.ingress.tgbot.service;
 
-public class ExportService {
+import java.time.LocalDate;
+
+public interface ExportService {
+    byte[] exportResultsToExcel(Long surveyId, String status, LocalDate from, LocalDate to);
 }

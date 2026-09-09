@@ -1,5 +1,6 @@
-package az.ingress.tgbot.dto;
+package az.ingress.tgbot.dto.question;
 
+import az.ingress.tgbot.dto.questionOption.QuestionOptionResponse;
 import az.ingress.tgbot.enums.QuestionType;
 import lombok.Builder;
 import lombok.Data;
@@ -15,7 +16,7 @@ public class QuestionResponse {
     private String text;
     private QuestionType type;
     private Boolean isRequired;
-    private Integer orderIndex;
+    private Long orderIndex;
     private String validationRegex;
     private String nextQuestionLogic;
     private List<QuestionOptionResponse> options;

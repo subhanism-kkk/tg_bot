@@ -1,5 +1,6 @@
-package az.ingress.tgbot.dto;
+package az.ingress.tgbot.dto.survey;
 
+import az.ingress.tgbot.dto.step.StepResponse;
 import lombok.Builder;
 import lombok.Data;
 

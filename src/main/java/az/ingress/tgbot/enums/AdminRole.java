@@ -1,4 +1,6 @@
 package az.ingress.tgbot.enums;
 
-public class AdminRole {
+public enum AdminRole {
+    ADMIN,
+    OPERATOR
 }

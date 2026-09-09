@@ -1,4 +1,4 @@
-package az.ingress.tgbot.dto;
+package az.ingress.tgbot.dto.auth;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;

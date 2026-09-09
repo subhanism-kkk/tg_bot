@@ -1,4 +1,4 @@
-package az.ingress.tgbot.dto;
+package az.ingress.tgbot.dto.questionOption;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -14,5 +14,5 @@ public class QuestionOptionUpdateRequest {
     private String value;
 
     @NotNull(message = "Order index is required")
-    private Integer orderIndex;
+    private Long orderIndex;
 }

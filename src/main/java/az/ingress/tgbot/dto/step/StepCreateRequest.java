@@ -1,4 +1,4 @@
-package az.ingress.tgbot.dto;
+package az.ingress.tgbot.dto.step;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -11,7 +11,7 @@ public class StepCreateRequest {
     private String title;
 
     @NotNull(message = "Order index is required")
-    private Integer orderIndex;
+    private Long orderIndex;
 
     private Boolean isActive = true;
 }

@@ -1,4 +1,4 @@
-package az.ingress.tgbot.dto;
+package az.ingress.tgbot.dto.questionOption;
 
 import lombok.Builder;
 import lombok.Data;
@@ -11,5 +11,5 @@ public class QuestionOptionResponse {
     private Long questionId;
     private String text;
     private String value;
-    private Integer orderIndex;
+    private Long orderIndex;
 }

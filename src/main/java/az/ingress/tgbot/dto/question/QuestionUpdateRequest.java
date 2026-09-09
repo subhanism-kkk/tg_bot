@@ -1,5 +1,6 @@
-package az.ingress.tgbot.dto;
+package az.ingress.tgbot.dto.question;
 
+import az.ingress.tgbot.dto.questionOption.QuestionOptionCreateRequest;
 import az.ingress.tgbot.enums.QuestionType;
 import jakarta.validation.Valid;
 import lombok.Data;
@@ -12,7 +13,7 @@ public class QuestionUpdateRequest {
     private String text;
     private QuestionType type;
     private Boolean isRequired;
-    private Integer orderIndex;
+    private Long orderIndex;
     private String validationRegex;
     private String nextQuestionLogic;
 

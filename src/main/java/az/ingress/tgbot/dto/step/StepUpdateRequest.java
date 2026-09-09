@@ -1,4 +1,4 @@
-package az.ingress.tgbot.dto;
+package az.ingress.tgbot.dto.step;
 
 import lombok.Data;
 
@@ -6,6 +6,6 @@ import lombok.Data;
 public class StepUpdateRequest {
 
     private String title;
-    private Integer orderIndex;
+    private Long orderIndex;
     private Boolean isActive;
 }

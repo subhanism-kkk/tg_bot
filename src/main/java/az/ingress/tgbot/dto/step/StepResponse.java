@@ -1,6 +1,6 @@
-package az.ingress.tgbot.dto;
+package az.ingress.tgbot.dto.step;
 
-import com.example.surveybot.dto.question.QuestionResponse;
+import az.ingress.tgbot.dto.question.QuestionResponse;
 import lombok.Builder;
 import lombok.Data;
 
@@ -13,7 +13,7 @@ public class StepResponse {
     private Long id;
     private Long surveyId;
     private String title;
-    private Integer orderIndex;
+    private Long orderIndex;
     private Boolean isActive;
     private List<QuestionResponse> questions;
 }

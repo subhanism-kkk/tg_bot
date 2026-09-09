@@ -1,4 +1,10 @@
-package az.ingress.tgbot;
+package az.ingress.tgbot.enums;
 
-public class QuestionType {
+public enum QuestionType {
+    TEXT,
+    NUMBER,
+    RADIO,
+    CHECKBOX,
+    DATE,
+    PHONE
 }

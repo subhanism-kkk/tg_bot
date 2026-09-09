@@ -1,4 +1,4 @@
-package az.ingress.hrms.exception;
+package az.ingress.tgbot.exception;
 
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;

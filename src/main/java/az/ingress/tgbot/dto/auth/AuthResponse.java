@@ -1,4 +1,4 @@
-package az.ingress.tgbot.dto;
+package az.ingress.tgbot.dto.auth;
 
 import az.ingress.tgbot.enums.AdminRole;
 import lombok.AllArgsConstructor;

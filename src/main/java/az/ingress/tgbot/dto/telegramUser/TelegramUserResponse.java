@@ -1,4 +1,4 @@
-package az.ingress.tgbot.dto;
+package az.ingress.tgbot.dto.telegramUser;
 
 import az.ingress.tgbot.enums.RegistrationStatus;
 import lombok.Builder;

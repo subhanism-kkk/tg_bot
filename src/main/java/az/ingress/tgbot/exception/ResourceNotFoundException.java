@@ -1,4 +1,4 @@
-package az.ingress.hrms.exception;
+package az.ingress.tgbot.exception;
 
 public class ResourceNotFoundException
         extends RuntimeException {

@@ -1,4 +1,4 @@
-package az.ingress.tgbot.dto;
+package az.ingress.tgbot.dto.adminUser;
 
 import az.ingress.tgbot.enums.AdminRole;
 import jakarta.validation.constraints.NotBlank;

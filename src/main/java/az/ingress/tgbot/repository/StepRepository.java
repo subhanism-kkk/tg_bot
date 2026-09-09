@@ -1,4 +1,7 @@
 package az.ingress.tgbot.repository;
 
-public class StepRepository {
+import az.ingress.tgbot.entity.Step;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface StepRepository extends JpaRepository<Step, Long> {
 }
