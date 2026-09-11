@@ -1,6 +1,5 @@
 package az.ingress.tgbot.dto.auth;
 
-import az.ingress.tgbot.enums.AdminRole;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -21,6 +20,4 @@ public class RegisterRequest {
     @NotBlank(message = "Password cannot be blank.")
     @Size(min = 6, max = 100, message = "Password must be at least 6 characters.")
     private String password;
-
-    private AdminRole role;
 }

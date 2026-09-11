@@ -1,6 +1,6 @@
 package az.ingress.tgbot.dto.auth;
 
-import az.ingress.tgbot.enums.AdminRole;
+import az.ingress.tgbot.enums.UserRole;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,8 +12,12 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AuthResponse {
 
-    private String token;
+    private String accessToken;
+    private String refreshToken;
+
+    @Builder.Default
     private String tokenType = "Bearer";
+
     private String username;
-    private AdminRole role;
+    private UserRole role;
 }

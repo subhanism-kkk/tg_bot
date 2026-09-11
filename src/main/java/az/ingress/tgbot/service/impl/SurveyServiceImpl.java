@@ -11,6 +11,7 @@ import az.ingress.tgbot.mapper.SurveyMapper;
 import az.ingress.tgbot.repository.SurveyRepository;
 import az.ingress.tgbot.service.SurveyService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -60,7 +61,8 @@ public class SurveyServiceImpl implements SurveyService {
 
     @Override
     public List<SurveyResponse> getAll() {
-        return repository.findAll().stream()
+        return repository.findAll(Sort.by(Sort.Direction.ASC, "orderIndex"))
+                .stream()
                 .map(mapper::toResponse)
                 .toList();
     }

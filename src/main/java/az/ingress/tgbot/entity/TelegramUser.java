@@ -1,10 +1,8 @@
 package az.ingress.tgbot.entity;
 
-import az.ingress.tgbot.entity.base.BaseIdEntity;
 import az.ingress.tgbot.enums.RegistrationStatus;
 import jakarta.persistence.*;
 import lombok.*;
-import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
 
@@ -14,13 +12,17 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
-public class TelegramUser extends BaseIdEntity {
+@Builder
+public class TelegramUser {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @Column(name = "chat_id", nullable = false, unique = true)
+    @Column(name = "chat_id", unique = true, nullable = false)
     private Long chatId;
 
+    @Column(name = "username")
     private String username;
 
     @Column(name = "first_name")
@@ -29,12 +31,12 @@ public class TelegramUser extends BaseIdEntity {
     @Column(name = "last_name")
     private String lastName;
 
-    @Column(name = "phone_number", length = 50)
+    @Column(name = "phone_number")
     private String phoneNumber;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "registration_status", nullable = false, length = 50)
-    private RegistrationStatus registrationStatus = RegistrationStatus.NOT_STARTED;
+    @Column(name = "registration_status")
+    private RegistrationStatus registrationStatus;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "current_step_id")
@@ -44,10 +46,16 @@ public class TelegramUser extends BaseIdEntity {
     @JoinColumn(name = "current_question_id")
     private Question currentQuestion;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "draft_checkbox_selections")
+    private String draftCheckboxSelections;
+
+    @Column(name = "auth_step")
+    private String authStep;
+
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at", nullable = false)
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
     @PrePersist

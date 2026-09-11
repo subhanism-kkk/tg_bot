@@ -1,6 +1,6 @@
 package az.ingress.tgbot.dto.adminUser;
 
-import az.ingress.tgbot.enums.AdminRole;
+import az.ingress.tgbot.enums.UserRole;
 import lombok.Builder;
 import lombok.Data;
 
@@ -12,6 +12,6 @@ public class AdminUserResponse {
 
     private Long id;
     private String username;
-    private AdminRole role;
+    private UserRole role;
     private LocalDateTime createdAt;
 }

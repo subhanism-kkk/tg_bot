@@ -12,6 +12,7 @@ import az.ingress.tgbot.repository.StepRepository;
 import az.ingress.tgbot.repository.SurveyRepository;
 import az.ingress.tgbot.service.StepService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -62,7 +63,7 @@ public class StepServiceImpl implements StepService {
 
     @Override
     public List<StepResponse> getAll() {
-        return repository.findAll()
+        return repository.findAll(Sort.by(Sort.Direction.ASC, "orderIndex"))
                 .stream()
                 .map(mapper::toResponse)
                 .toList();

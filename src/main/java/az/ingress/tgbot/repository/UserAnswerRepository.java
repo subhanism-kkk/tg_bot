@@ -1,5 +1,7 @@
 package az.ingress.tgbot.repository;
 
+import az.ingress.tgbot.entity.Question;
+import az.ingress.tgbot.entity.TelegramUser;
 import az.ingress.tgbot.entity.UserAnswer;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -7,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface UserAnswerRepository extends JpaRepository<UserAnswer, Long> {
 
@@ -27,5 +30,10 @@ public interface UserAnswerRepository extends JpaRepository<UserAnswer, Long> {
             @Param("status") String status,
             @Param("startDateTime") LocalDateTime startDateTime,
             @Param("endDateTime") LocalDateTime endDateTime
+    );
+
+    Optional<UserAnswer> findFirstByTelegramUserAndQuestion(
+            TelegramUser telegramUser,
+            Question question
     );
 }

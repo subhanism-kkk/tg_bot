@@ -19,6 +19,7 @@ public class TelegramUserResponse {
     private RegistrationStatus registrationStatus;
     private Long currentStepId;
     private Long currentQuestionId;
+    private String draftCheckboxSelections;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

@@ -1,10 +1,8 @@
 package az.ingress.tgbot.entity;
 
-import az.ingress.tgbot.entity.base.BaseIdEntity;
-import az.ingress.tgbot.enums.AdminRole;
+import az.ingress.tgbot.enums.UserRole;
 import jakarta.persistence.*;
 import lombok.*;
-import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
 
@@ -14,21 +12,28 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
-public class AdminUser extends BaseIdEntity {
+@Builder
+public class AdminUser {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @Column(nullable = false, unique = true, length = 100)
+    @Column(nullable = false, unique = true)
     private String username;
 
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 50)
-    private AdminRole role;
+    @Column(nullable = false)
+    private UserRole role;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean active = true;
+
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
     @PrePersist

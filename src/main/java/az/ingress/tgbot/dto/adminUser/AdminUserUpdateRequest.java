@@ -1,6 +1,6 @@
 package az.ingress.tgbot.dto.adminUser;
 
-import az.ingress.tgbot.enums.AdminRole;
+import az.ingress.tgbot.enums.UserRole;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
@@ -15,5 +15,5 @@ public class AdminUserUpdateRequest {
     private String password;
 
     @NotNull(message = "Role is required")
-    private AdminRole role;
+    private UserRole role;
 }

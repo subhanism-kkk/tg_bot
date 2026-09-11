@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: TgBot
+
+  datasource:
+    url: jdbc:sqlserver://localhost:1433;databaseName=tg_bot;encrypt=true;trustServerCertificate=true;
+    username: hradmin
+    password: hradmin123!
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+
+server:
+  port: 8082
+
+logging:
+  level:
+    org.hibernate.orm.jdbc.bind: trace
+
+jwt:
+  secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+  access-token-expiration: 86400000
+  refresh-token-expiration: 604800000
+
+telegram:
+  bot:
+    username: SubhanTest64_bot
+    token: 8918093834:AAEkbBE25CuA2aSqM7NRcRqcBYhW54swua0

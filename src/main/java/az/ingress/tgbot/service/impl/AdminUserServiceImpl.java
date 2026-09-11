@@ -53,20 +53,27 @@ public class AdminUserServiceImpl implements AdminUserService {
                                 "Admin user not found with id: " + id)
                 );
 
-        String username = request.getUsername().trim().toLowerCase();
+        if (request.getUsername() != null && !request.getUsername().isBlank()) {
 
-        if (adminUserRepository.existsByUsernameIgnoreCaseAndIdNot(username, id)) {
-            throw new ResourceAlreadyExistsException(
-                    "Admin user with username '" + username + "' already exists.");
+            String username = request.getUsername().trim().toLowerCase();
+
+            if (adminUserRepository.existsByUsernameIgnoreCaseAndIdNot(username, id)) {
+                throw new ResourceAlreadyExistsException(
+                        "Admin user with username '" + username + "' already exists."
+                );
+            }
+
+            entity.setUsername(username);
         }
 
         adminUserMapper.updateEntity(entity, request);
-        entity.setUsername(username);
 
         if (request.getPassword() != null && !request.getPassword().isBlank()) {
             entity.setPasswordHash(
-                    passwordEncoder.encode(request.getPassword()));
+                    passwordEncoder.encode(request.getPassword())
+            );
         }
+
         return adminUserMapper.toResponse(entity);
     }
 

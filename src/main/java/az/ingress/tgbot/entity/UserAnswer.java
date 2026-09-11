@@ -8,7 +8,15 @@ import lombok.experimental.SuperBuilder;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "user_answers")
+@Table(
+        name = "user_answers",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_user_question",
+                        columnNames = {"telegram_user_id", "question_id"}
+                )
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
