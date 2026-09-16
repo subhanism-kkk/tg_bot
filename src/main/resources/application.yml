@@ -5,7 +5,7 @@ spring:
   datasource:
     url: jdbc:sqlserver://localhost:1433;databaseName=tg_bot;encrypt=true;trustServerCertificate=true;
     username: hradmin
-    password: hradmin123!
+    password: pasword
     driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
 
   jpa:
@@ -23,11 +23,11 @@ logging:
     org.hibernate.orm.jdbc.bind: trace
 
 jwt:
-  secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+  secret: secret key
   access-token-expiration: 86400000
   refresh-token-expiration: 604800000
 
 telegram:
   bot:
-    username: SubhanTest64_bot
-    token: 8918093834:AAEkbBE25CuA2aSqM7NRcRqcBYhW54swua0
+    username: tg_bot
+    token: key
