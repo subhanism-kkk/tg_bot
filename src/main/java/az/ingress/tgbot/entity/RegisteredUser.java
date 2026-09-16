@@ -7,13 +7,13 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "admin_users")
+@Table(name = "registered_users")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class AdminUser {
+public class RegisteredUser {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

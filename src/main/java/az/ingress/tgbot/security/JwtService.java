@@ -1,6 +1,6 @@
 package az.ingress.tgbot.security;
 
-import az.ingress.tgbot.entity.AdminUser;
+import az.ingress.tgbot.entity.RegisteredUser;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -33,26 +33,26 @@ public class JwtService {
         this.refreshTokenExpiration = refreshTokenExpiration;
     }
 
-    public String generateAccessToken(AdminUser admin) {
+    public String generateAccessToken(RegisteredUser user) {
 
         return generateToken(
-                admin,
+                user,
                 accessTokenExpiration,
                 "ACCESS"
         );
     }
 
-    public String generateRefreshToken(AdminUser admin) {
+    public String generateRefreshToken(RegisteredUser user) {
 
         return generateToken(
-                admin,
+                user,
                 refreshTokenExpiration,
                 "REFRESH"
         );
     }
 
     private String generateToken(
-            AdminUser admin,
+            RegisteredUser user,
             long expiration,
             String tokenType
     ) {
@@ -63,8 +63,8 @@ public class JwtService {
                 new Date(now.getTime() + expiration);
 
         return Jwts.builder()
-                .subject(admin.getUsername())
-                .claim("role", admin.getRole())
+                .subject(user.getUsername())
+                .claim("role", user.getRole())
                 .claim("tokenType", tokenType)
                 .issuedAt(now)
                 .expiration(expirationDate)
@@ -136,7 +136,7 @@ public class JwtService {
 
     public boolean isTokenValid(
             String token,
-            AdminUser admin
+            RegisteredUser user
     ) {
 
         try {
@@ -146,7 +146,7 @@ public class JwtService {
 
             return username != null
                     && username.equalsIgnoreCase(
-                    admin.getUsername()
+                    user.getUsername()
             )
                     && !isTokenExpired(token);
 

@@ -1,4 +1,4 @@
-package az.ingress.tgbot.dto.adminUser;
+package az.ingress.tgbot.dto.registeredUser;
 
 import az.ingress.tgbot.enums.UserRole;
 import lombok.Builder;
@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 
 @Data
 @Builder
-public class AdminUserResponse {
+public class RegisteredUserResponse {
 
     private Long id;
     private String username;

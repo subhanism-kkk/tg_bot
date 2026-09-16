@@ -3,9 +3,9 @@ package az.ingress.tgbot.service.impl;
 import az.ingress.tgbot.dto.auth.AuthResponse;
 import az.ingress.tgbot.dto.auth.LoginRequest;
 import az.ingress.tgbot.dto.auth.RefreshTokenRequest;
-import az.ingress.tgbot.entity.AdminUser;
+import az.ingress.tgbot.entity.RegisteredUser;
 import az.ingress.tgbot.exception.InvalidCredentialsException;
-import az.ingress.tgbot.repository.AdminUserRepository;
+import az.ingress.tgbot.repository.RegisteredUserRepository;
 import az.ingress.tgbot.security.JwtService;
 import az.ingress.tgbot.service.AuthService;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
-    private final AdminUserRepository adminUserRepository;
+    private final RegisteredUserRepository registeredUserRepository;
 
     private final PasswordEncoder passwordEncoder;
 
@@ -32,8 +32,8 @@ public class AuthServiceImpl implements AuthService {
                         .trim()
                         .toLowerCase();
 
-        AdminUser admin =
-                adminUserRepository
+        RegisteredUser user =
+                registeredUserRepository
                         .findByUsernameIgnoreCase(username)
                         .orElseThrow(() ->
                                 new InvalidCredentialsException(
@@ -41,16 +41,16 @@ public class AuthServiceImpl implements AuthService {
                                 )
                         );
 
-        if (!admin.isActive()) {
+        if (!user.isActive()) {
 
             throw new InvalidCredentialsException(
-                    "Admin account is disabled."
+                    "user account is disabled."
             );
         }
 
         if (!passwordEncoder.matches(
                 request.getPassword(),
-                admin.getPasswordHash()
+                user.getPasswordHash()
         )) {
 
             throw new InvalidCredentialsException(
@@ -59,17 +59,17 @@ public class AuthServiceImpl implements AuthService {
         }
 
         String accessToken =
-                jwtService.generateAccessToken(admin);
+                jwtService.generateAccessToken(user);
 
         String refreshToken =
-                jwtService.generateRefreshToken(admin);
+                jwtService.generateRefreshToken(user);
 
         return AuthResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .tokenType("Bearer")
-                .username(admin.getUsername())
-                .role(admin.getRole())
+                .username(user.getUsername())
+                .role(user.getRole())
                 .build();
     }
 
@@ -93,8 +93,8 @@ public class AuthServiceImpl implements AuthService {
         String username =
                 jwtService.extractUsername(refreshToken);
 
-        AdminUser admin =
-                adminUserRepository
+        RegisteredUser user =
+                registeredUserRepository
                         .findByUsernameIgnoreCase(username)
                         .orElseThrow(() ->
                                 new InvalidCredentialsException(
@@ -102,7 +102,7 @@ public class AuthServiceImpl implements AuthService {
                                 )
                         );
 
-        if (!admin.isActive()) {
+        if (!user.isActive()) {
 
             throw new InvalidCredentialsException(
                     "Admin account is disabled."
@@ -111,7 +111,7 @@ public class AuthServiceImpl implements AuthService {
 
         if (!jwtService.isTokenValid(
                 refreshToken,
-                admin
+                user
         )) {
 
             throw new InvalidCredentialsException(
@@ -120,14 +120,14 @@ public class AuthServiceImpl implements AuthService {
         }
 
         String newAccessToken =
-                jwtService.generateAccessToken(admin);
+                jwtService.generateAccessToken(user);
 
         return AuthResponse.builder()
                 .accessToken(newAccessToken)
                 .refreshToken(refreshToken)
                 .tokenType("Bearer")
-                .username(admin.getUsername())
-                .role(admin.getRole())
+                .username(user.getUsername())
+                .role(user.getRole())
                 .build();
     }
 }

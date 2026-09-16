@@ -1,7 +1,7 @@
 package az.ingress.tgbot.security;
 
-import az.ingress.tgbot.entity.AdminUser;
-import az.ingress.tgbot.repository.AdminUserRepository;
+import az.ingress.tgbot.entity.RegisteredUser;
+import az.ingress.tgbot.repository.RegisteredUserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,7 +23,7 @@ public class JwtAuthenticationFilter
         extends OncePerRequestFilter {
 
     private final JwtService jwtService;
-    private final AdminUserRepository adminUserRepository;
+    private final RegisteredUserRepository registeredUserRepository;
 
     @Override
     protected boolean shouldNotFilter(
@@ -77,12 +77,12 @@ public class JwtAuthenticationFilter
             String username =
                     jwtService.extractUsername(token);
 
-            AdminUser admin =
-                    adminUserRepository
+            RegisteredUser user =
+                    registeredUserRepository
                             .findByUsernameIgnoreCase(username)
                             .orElse(null);
 
-            if (admin == null || !admin.isActive()) {
+            if (user == null || !user.isActive()) {
 
                 filterChain.doFilter(
                         request,
@@ -94,7 +94,7 @@ public class JwtAuthenticationFilter
 
             if (!jwtService.isTokenValid(
                     token,
-                    admin
+                    user
             )) {
 
                 filterChain.doFilter(
@@ -106,7 +106,7 @@ public class JwtAuthenticationFilter
             }
 
             String role =
-                    admin.getRole().name();
+                    user.getRole().name();
 
             List<SimpleGrantedAuthority> authorities =
                     List.of(
@@ -117,7 +117,7 @@ public class JwtAuthenticationFilter
 
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
-                            admin,
+                            user,
                             null,
                             authorities
                     );

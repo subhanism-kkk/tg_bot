@@ -1,9 +1,9 @@
 package az.ingress.tgbot.controller;
 
-import az.ingress.tgbot.dto.adminUser.AdminUserCreateRequest;
-import az.ingress.tgbot.dto.adminUser.AdminUserResponse;
-import az.ingress.tgbot.dto.adminUser.AdminUserUpdateRequest;
-import az.ingress.tgbot.service.AdminUserService;
+import az.ingress.tgbot.dto.registeredUser.RegisteredUserCreateRequest;
+import az.ingress.tgbot.dto.registeredUser.RegisteredUserResponse;
+import az.ingress.tgbot.dto.registeredUser.RegisteredUserUpdateRequest;
+import az.ingress.tgbot.service.RegisteredUserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -22,22 +22,22 @@ import java.util.List;
 @RequestMapping("/api/admin/users")
 @RequiredArgsConstructor
 @Validated
-@Tag(name = "Admin User Management", description = "APIs for managing admin system accounts")
-public class AdminUserController {
+@Tag(name = "RegisteredUser Management", description = "APIs for managing Registered User system accounts")
+public class RegisteredUserController {
 
-    private final AdminUserService adminUserService;
+    private final RegisteredUserService registeredUserService;
 
     @PostMapping
-    @Operation(summary = "Create admin user", description = "Creates a new administrative account.")
+    @Operation(summary = "Create Registered User", description = "Creates a new administrative account.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Admin created successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid payload or validation error"),
             @ApiResponse(responseCode = "409", description = "Username already exists")
     })
-    public ResponseEntity<AdminUserResponse> create(@Valid @RequestBody AdminUserCreateRequest request) {
+    public ResponseEntity<RegisteredUserResponse> create(@Valid @RequestBody RegisteredUserCreateRequest request) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(adminUserService.create(request));
+                .body(registeredUserService.create(request));
     }
 
     @GetMapping
@@ -45,8 +45,8 @@ public class AdminUserController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Admin list retrieved successfully")
     })
-    public ResponseEntity<List<AdminUserResponse>> getAll() {
-        return ResponseEntity.ok(adminUserService.getAll());
+    public ResponseEntity<List<RegisteredUserResponse>> getAll() {
+        return ResponseEntity.ok(registeredUserService.getAll());
     }
 
     @GetMapping("/{id}")
@@ -55,24 +55,24 @@ public class AdminUserController {
             @ApiResponse(responseCode = "200", description = "Admin user found"),
             @ApiResponse(responseCode = "404", description = "Admin user not found")
     })
-    public ResponseEntity<AdminUserResponse> getById(
+    public ResponseEntity<RegisteredUserResponse> getById(
             @PathVariable @Positive(message = "ID must be positive") Long id
     ) {
-        return ResponseEntity.ok(adminUserService.getById(id));
+        return ResponseEntity.ok(registeredUserService.getById(id));
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Update admin", description = "Updates administrative details or credentials.")
+    @Operation(summary = "Update Registered User", description = "Updates Registered User details or credentials.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Admin user updated successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid payload or validation error"),
             @ApiResponse(responseCode = "404", description = "Admin user not found")
     })
-    public ResponseEntity<AdminUserResponse> update(
+    public ResponseEntity<RegisteredUserResponse> update(
             @PathVariable @Positive(message = "ID must be positive") Long id,
-            @Valid @RequestBody AdminUserUpdateRequest request
+            @Valid @RequestBody RegisteredUserUpdateRequest request
     ) {
-        return ResponseEntity.ok(adminUserService.update(id, request));
+        return ResponseEntity.ok(registeredUserService.update(id, request));
     }
 
     @DeleteMapping("/{id}")
@@ -84,7 +84,7 @@ public class AdminUserController {
     public ResponseEntity<Void> delete(
             @PathVariable @Positive(message = "ID must be positive") Long id
     ) {
-        adminUserService.delete(id);
+        registeredUserService.delete(id);
         return ResponseEntity.noContent().build();
     }
 }
