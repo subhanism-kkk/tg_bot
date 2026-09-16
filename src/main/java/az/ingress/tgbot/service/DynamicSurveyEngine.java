@@ -57,7 +57,7 @@ public class DynamicSurveyEngine {
                         .registrationStatus(RegistrationStatus.IN_PROGRESS)
                         .build()));
 
-        Optional<Survey> activeSurveyOpt = surveyRepository.findByIsActiveTrue();
+        Optional<Survey> activeSurveyOpt = surveyRepository.findFirstByIsActiveTrueOrderByIdDesc();
         if (activeSurveyOpt.isEmpty()) {
             return message(chatId, "⚠️ There are no active surveys available right now.");
         }
@@ -96,7 +96,7 @@ public class DynamicSurveyEngine {
         TelegramUser user = userRepository.findByChatId(chatId)
                 .orElseThrow(() -> new IllegalStateException("Telegram user not found: " + chatId));
 
-        Optional<Survey> activeSurveyOpt = surveyRepository.findByIsActiveTrue();
+        Optional<Survey> activeSurveyOpt = surveyRepository.findFirstByIsActiveTrueOrderByIdDesc();
         if (activeSurveyOpt.isEmpty()) {
             return message(chatId, "⚠️ There are no active surveys available right now.");
         }

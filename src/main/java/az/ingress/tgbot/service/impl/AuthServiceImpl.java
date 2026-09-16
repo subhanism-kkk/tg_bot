@@ -11,31 +11,38 @@ import az.ingress.tgbot.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
     private final AdminUserRepository adminUserRepository;
+
     private final PasswordEncoder passwordEncoder;
+
     private final JwtService jwtService;
 
     @Override
+    @Transactional(readOnly = true)
     public AuthResponse login(LoginRequest request) {
 
-        String username = request.getUsername()
-                .trim()
-                .toLowerCase();
+        String username =
+                request.getUsername()
+                        .trim()
+                        .toLowerCase();
 
-        AdminUser admin = adminUserRepository
-                .findByUsernameIgnoreCase(username)
-                .orElseThrow(() ->
-                        new InvalidCredentialsException(
-                                "Invalid username or password."
-                        )
-                );
+        AdminUser admin =
+                adminUserRepository
+                        .findByUsernameIgnoreCase(username)
+                        .orElseThrow(() ->
+                                new InvalidCredentialsException(
+                                        "Invalid username or password."
+                                )
+                        );
 
         if (!admin.isActive()) {
+
             throw new InvalidCredentialsException(
                     "Admin account is disabled."
             );
@@ -45,6 +52,7 @@ public class AuthServiceImpl implements AuthService {
                 request.getPassword(),
                 admin.getPasswordHash()
         )) {
+
             throw new InvalidCredentialsException(
                     "Invalid username or password."
             );
@@ -59,17 +67,24 @@ public class AuthServiceImpl implements AuthService {
         return AuthResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
+                .tokenType("Bearer")
                 .username(admin.getUsername())
                 .role(admin.getRole())
                 .build();
     }
 
     @Override
-    public AuthResponse refreshToken(RefreshTokenRequest request) {
+    @Transactional(readOnly = true)
+    public AuthResponse refreshToken(
+            RefreshTokenRequest request
+    ) {
 
-        String refreshToken = request.getRefreshToken();
+        String refreshToken =
+                request.getRefreshToken();
 
-        if (!jwtService.isTokenValid(refreshToken)) {
+        if (!jwtService.isTokenValid(refreshToken)
+                || !jwtService.isRefreshToken(refreshToken)) {
+
             throw new InvalidCredentialsException(
                     "Expired or invalid refresh token."
             );
@@ -78,21 +93,27 @@ public class AuthServiceImpl implements AuthService {
         String username =
                 jwtService.extractUsername(refreshToken);
 
-        AdminUser admin = adminUserRepository
-                .findByUsernameIgnoreCase(username)
-                .orElseThrow(() ->
-                        new InvalidCredentialsException(
-                                "Invalid refresh token."
-                        )
-                );
+        AdminUser admin =
+                adminUserRepository
+                        .findByUsernameIgnoreCase(username)
+                        .orElseThrow(() ->
+                                new InvalidCredentialsException(
+                                        "Invalid refresh token."
+                                )
+                        );
 
         if (!admin.isActive()) {
+
             throw new InvalidCredentialsException(
                     "Admin account is disabled."
             );
         }
 
-        if (!jwtService.isTokenValid(refreshToken, admin)) {
+        if (!jwtService.isTokenValid(
+                refreshToken,
+                admin
+        )) {
+
             throw new InvalidCredentialsException(
                     "Expired or invalid refresh token."
             );
@@ -104,6 +125,7 @@ public class AuthServiceImpl implements AuthService {
         return AuthResponse.builder()
                 .accessToken(newAccessToken)
                 .refreshToken(refreshToken)
+                .tokenType("Bearer")
                 .username(admin.getUsername())
                 .role(admin.getRole())
                 .build();

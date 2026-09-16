@@ -1,6 +1,7 @@
 package az.ingress.tgbot.controller;
 
 import az.ingress.tgbot.dto.question.QuestionCreateRequest;
+import az.ingress.tgbot.dto.question.QuestionReorderRequest;
 import az.ingress.tgbot.dto.question.QuestionResponse;
 import az.ingress.tgbot.dto.question.QuestionUpdateRequest;
 import az.ingress.tgbot.service.QuestionService;
@@ -91,6 +92,15 @@ public class QuestionController {
             @PathVariable @Positive(message = "ID must be positive") Long id
     ) {
         questionService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/steps/{stepId}/questions/reorder")
+    public ResponseEntity<Void> reorderQuestions(
+            @PathVariable Long stepId,
+            @Valid @RequestBody QuestionReorderRequest request
+    ) {
+        questionService.reorder(stepId, request.getQuestionIds());
         return ResponseEntity.noContent().build();
     }
 }

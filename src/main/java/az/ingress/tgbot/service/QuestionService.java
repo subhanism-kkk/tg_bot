@@ -12,4 +12,5 @@ public interface QuestionService {
     QuestionResponse getById(Long id);
     List<QuestionResponse> getByStepId(Long stepId);
     void delete(Long id);
+    void reorder(Long stepId, List<Long> questionIds);
 }

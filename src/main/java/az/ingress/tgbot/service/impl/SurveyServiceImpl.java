@@ -47,7 +47,11 @@ public class SurveyServiceImpl implements SurveyService {
     @Transactional
     public SurveyResponse update(Long id, SurveyUpdateRequest request) {
         Survey survey = fetchSurvey(id);
-
+        if (repository.existsByTitleIgnoreCase(request.getTitle().trim())) {
+            throw new ResourceAlreadyExistsException(
+                    "Survey with the title '" + request.getTitle().trim() + "' already exists"
+            );
+        }
         mapper.updateEntity(survey, request);
 
         Survey updated = repository.save(survey);
@@ -61,7 +65,10 @@ public class SurveyServiceImpl implements SurveyService {
 
     @Override
     public List<SurveyResponse> getAll() {
-        return repository.findAll(Sort.by(Sort.Direction.ASC, "orderIndex"))
+
+        return repository.findAll(
+                        Sort.by(Sort.Direction.ASC, "id")
+                )
                 .stream()
                 .map(mapper::toResponse)
                 .toList();

@@ -24,6 +24,7 @@ public class JwtService {
             @Value("${jwt.access-token-expiration}") long accessTokenExpiration,
             @Value("${jwt.refresh-token-expiration}") long refreshTokenExpiration
     ) {
+
         this.secretKey = Keys.hmacShaKeyFor(
                 secret.getBytes(StandardCharsets.UTF_8)
         );
@@ -33,6 +34,7 @@ public class JwtService {
     }
 
     public String generateAccessToken(AdminUser admin) {
+
         return generateToken(
                 admin,
                 accessTokenExpiration,
@@ -41,6 +43,7 @@ public class JwtService {
     }
 
     public String generateRefreshToken(AdminUser admin) {
+
         return generateToken(
                 admin,
                 refreshTokenExpiration,
@@ -61,7 +64,7 @@ public class JwtService {
 
         return Jwts.builder()
                 .subject(admin.getUsername())
-                .claim("role", admin.getRole().name())
+                .claim("role", admin.getRole())
                 .claim("tokenType", tokenType)
                 .issuedAt(now)
                 .expiration(expirationDate)
@@ -70,6 +73,7 @@ public class JwtService {
     }
 
     public String extractUsername(String token) {
+
         return extractClaim(
                 token,
                 Claims::getSubject
@@ -77,15 +81,55 @@ public class JwtService {
     }
 
     public String extractRole(String token) {
+
         return extractAllClaims(token)
                 .get("role", String.class);
     }
 
+    public String extractTokenType(String token) {
+
+        return extractAllClaims(token)
+                .get("tokenType", String.class);
+    }
+
     public boolean isTokenValid(String token) {
+
         try {
+
             extractAllClaims(token);
+
             return !isTokenExpired(token);
+
         } catch (Exception e) {
+
+            return false;
+        }
+    }
+
+    public boolean isAccessToken(String token) {
+
+        try {
+
+            return "ACCESS".equals(
+                    extractTokenType(token)
+            );
+
+        } catch (Exception e) {
+
+            return false;
+        }
+    }
+
+    public boolean isRefreshToken(String token) {
+
+        try {
+
+            return "REFRESH".equals(
+                    extractTokenType(token)
+            );
+
+        } catch (Exception e) {
+
             return false;
         }
     }
@@ -107,6 +151,7 @@ public class JwtService {
                     && !isTokenExpired(token);
 
         } catch (Exception e) {
+
             return false;
         }
     }

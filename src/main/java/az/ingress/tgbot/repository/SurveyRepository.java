@@ -8,7 +8,6 @@ import java.util.Optional;
 public interface SurveyRepository extends JpaRepository<Survey, Long> {
     boolean existsByTitle(String title);
 
-    Optional<Survey> findByIsActiveTrue();
-
+    Optional<Survey> findFirstByIsActiveTrueOrderByIdDesc();
     boolean existsByTitleIgnoreCase(String trimmedTitle);
 }

@@ -10,7 +10,6 @@ public class StepCreateRequest {
     @NotBlank(message = "Step title is required")
     private String title;
 
-    @NotNull(message = "Order index is required")
     private Long orderIndex;
 
     private Boolean isActive = true;

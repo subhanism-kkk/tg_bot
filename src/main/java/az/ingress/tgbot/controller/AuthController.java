@@ -25,9 +25,7 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/login")
-    @Operation(
-            summary = "Admin login"
-    )
+    @Operation(summary = "Admin login")
     @ApiResponses({
             @ApiResponse(
                     responseCode = "200",
@@ -41,18 +39,18 @@ public class AuthController {
     public ResponseEntity<AuthResponse> login(
             @Valid @RequestBody LoginRequest request
     ) {
+
         return ResponseEntity.ok(
                 authService.login(request)
         );
     }
 
     @PostMapping("/refresh")
-    @Operation(
-            summary = "Refresh admin access token"
-    )
+    @Operation(summary = "Refresh admin access token")
     public ResponseEntity<AuthResponse> refreshToken(
             @Valid @RequestBody RefreshTokenRequest request
     ) {
+
         return ResponseEntity.ok(
                 authService.refreshToken(request)
         );

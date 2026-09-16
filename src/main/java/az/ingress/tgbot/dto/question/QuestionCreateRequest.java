@@ -20,7 +20,6 @@ public class QuestionCreateRequest {
 
     private Boolean isRequired = true;
 
-    @NotNull(message = "Order index is required")
     private Long orderIndex;
 
     private String validationRegex;

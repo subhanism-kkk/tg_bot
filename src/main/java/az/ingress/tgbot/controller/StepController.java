@@ -1,7 +1,7 @@
 package az.ingress.tgbot.controller;
 
-import az.ingress.tgbot.dto.adminUser.AdminUserResponse;
 import az.ingress.tgbot.dto.step.StepCreateRequest;
+import az.ingress.tgbot.dto.step.StepReorderRequest;
 import az.ingress.tgbot.dto.step.StepResponse;
 import az.ingress.tgbot.dto.step.StepUpdateRequest;
 import az.ingress.tgbot.service.StepService;
@@ -101,6 +101,19 @@ public class StepController {
             @PathVariable @Positive(message = "ID must be positive") Long id
     ) {
         stepService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/surveys/{surveyId}/steps/reorder")
+    public ResponseEntity<Void> reorderSteps(
+            @PathVariable Long surveyId,
+            @Valid @RequestBody StepReorderRequest request
+    ) {
+        stepService.reorderSteps(
+                surveyId,
+                request.getStepIds()
+        );
+
         return ResponseEntity.noContent().build();
     }
 }

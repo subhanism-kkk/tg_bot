@@ -13,4 +13,5 @@ public interface StepService {
     List<StepResponse> getAll();
     List<StepResponse> getBySurveyId(Long surveyId);
     void delete(Long id);
+    void reorderSteps(Long surveyId, List<Long> stepIds);
 }

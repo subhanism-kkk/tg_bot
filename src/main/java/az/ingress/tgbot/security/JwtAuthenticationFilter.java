@@ -32,18 +32,9 @@ public class JwtAuthenticationFilter
 
         String uri = request.getRequestURI();
 
-        return request.getMethod()
-                .equalsIgnoreCase("OPTIONS")
-
-                || uri.startsWith("/api/admin/auth/")
-
+        return uri.startsWith("/api/admin/auth/")
                 || uri.startsWith("/swagger-ui/")
-
-                || uri.startsWith("/v3/api-docs/")
-
-                || uri.startsWith("/swagger-resources/")
-
-                || uri.startsWith("/webjars/");
+                || uri.startsWith("/v3/api-docs/");
     }
 
     @Override
@@ -56,10 +47,14 @@ public class JwtAuthenticationFilter
         String authHeader =
                 request.getHeader("Authorization");
 
-        if (authHeader == null ||
-                !authHeader.startsWith("Bearer ")) {
+        if (authHeader == null
+                || !authHeader.startsWith("Bearer ")) {
 
-            filterChain.doFilter(request, response);
+            filterChain.doFilter(
+                    request,
+                    response
+            );
+
             return;
         }
 
@@ -68,62 +63,83 @@ public class JwtAuthenticationFilter
 
         try {
 
-            if (!jwtService.isTokenValid(token)) {
-                filterChain.doFilter(request, response);
+            if (!jwtService.isTokenValid(token)
+                    || !jwtService.isAccessToken(token)) {
+
+                filterChain.doFilter(
+                        request,
+                        response
+                );
+
                 return;
             }
 
             String username =
                     jwtService.extractUsername(token);
 
-            if (username != null &&
-                    SecurityContextHolder
-                            .getContext()
-                            .getAuthentication() == null) {
+            AdminUser admin =
+                    adminUserRepository
+                            .findByUsernameIgnoreCase(username)
+                            .orElse(null);
 
-                AdminUser admin =
-                        adminUserRepository
-                                .findByUsernameIgnoreCase(username)
-                                .orElse(null);
+            if (admin == null || !admin.isActive()) {
 
-                if (admin != null &&
-                        admin.isActive() &&
-                        jwtService.isTokenValid(token, admin)) {
+                filterChain.doFilter(
+                        request,
+                        response
+                );
 
-                    List<SimpleGrantedAuthority> authorities =
-                            List.of(
-                                    new SimpleGrantedAuthority(
-                                            "ROLE_" +
-                                                    admin.getRole().name()
-                                    )
-                            );
-
-                    UsernamePasswordAuthenticationToken authentication =
-                            new UsernamePasswordAuthenticationToken(
-                                    admin,
-                                    null,
-                                    authorities
-                            );
-
-                    authentication.setDetails(
-                            new WebAuthenticationDetailsSource()
-                                    .buildDetails(request)
-                    );
-
-                    SecurityContextHolder
-                            .getContext()
-                            .setAuthentication(authentication);
-                }
+                return;
             }
 
-        } catch (Exception ignored) {
-            /*
-             * Invalid JWT must not crash the request.
-             * Spring Security will simply see the request
-             * as unauthenticated.
-             */
+            if (!jwtService.isTokenValid(
+                    token,
+                    admin
+            )) {
+
+                filterChain.doFilter(
+                        request,
+                        response
+                );
+
+                return;
+            }
+
+            String role =
+                    admin.getRole().name();
+
+            List<SimpleGrantedAuthority> authorities =
+                    List.of(
+                            new SimpleGrantedAuthority(
+                                    "ROLE_" + role
+                            )
+                    );
+
+            UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(
+                            admin,
+                            null,
+                            authorities
+                    );
+
+            authentication.setDetails(
+                    new WebAuthenticationDetailsSource()
+                            .buildDetails(request)
+            );
+
+            SecurityContextHolder
+                    .getContext()
+                    .setAuthentication(authentication);
+
+        } catch (Exception e) {
+
+            SecurityContextHolder
+                    .clearContext();
         }
 
-        filterChain.doFilter(request, response);
+        filterChain.doFilter(
+                request,
+                response
+        );
     }
 }

@@ -13,6 +13,5 @@ public class QuestionOptionUpdateRequest {
     @NotBlank(message = "Option value is required")
     private String value;
 
-    @NotNull(message = "Order index is required")
     private Long orderIndex;
 }
