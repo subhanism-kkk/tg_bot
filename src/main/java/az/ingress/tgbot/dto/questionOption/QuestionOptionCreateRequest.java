@@ -9,7 +9,6 @@ public class QuestionOptionCreateRequest {
     @NotBlank(message = "Option text is required")
     private String text;
 
-    @NotBlank(message = "Option value is required")
     private String value;
 
     private Long orderIndex;

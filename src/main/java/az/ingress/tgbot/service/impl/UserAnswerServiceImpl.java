@@ -23,42 +23,115 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class UserAnswerServiceImpl implements UserAnswerService {
+public class UserAnswerServiceImpl
+        implements UserAnswerService {
 
     private final UserAnswerRepository userAnswerRepository;
     private final TelegramUserRepository telegramUserRepository;
     private final QuestionRepository questionRepository;
     private final UserAnswerMapper userAnswerMapper;
 
+
     @Override
     @Transactional
-    public UserAnswerResponse submitAnswer(UserAnswerSubmitRequest request) {
-        TelegramUser telegramUser = telegramUserRepository.findById(request.getTelegramUserId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Telegram user not found with id: " + request.getTelegramUserId()));
+    public UserAnswerResponse submitAnswer(
+            UserAnswerSubmitRequest request
+    ) {
 
-        Question question = questionRepository.findById(request.getQuestionId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Question not found with id: " + request.getQuestionId()));
+        TelegramUser telegramUser =
+                telegramUserRepository
+                        .findById(
+                                request.getTelegramUserId()
+                        )
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Telegram user not found with id: "
+                                                + request.getTelegramUserId()
+                                )
+                        );
 
-        UserAnswer userAnswer = userAnswerMapper.toEntity(request);
-        userAnswer.setTelegramUser(telegramUser);
-        userAnswer.setQuestion(question);
 
-        UserAnswer savedAnswer = userAnswerRepository.save(userAnswer);
-        return userAnswerMapper.toResponse(savedAnswer);
-    }
+        Question question =
+                questionRepository
+                        .findById(
+                                request.getQuestionId()
+                        )
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Question not found with id: "
+                                                + request.getQuestionId()
+                                )
+                        );
 
-    @Override
-    public List<UserAnswerResponse> getResults(Long surveyId, String status, LocalDate from, LocalDate to) {
-        LocalDateTime startDateTime = (from != null) ? from.atStartOfDay() : null;
-        LocalDateTime endDateTime = (to != null) ? to.atTime(LocalTime.MAX) : null;
 
-        List<UserAnswer> answers = userAnswerRepository.findFilteredAnswers(
-                surveyId, status, startDateTime, endDateTime
+        UserAnswer userAnswer =
+                userAnswerRepository
+                        .findFirstByTelegramUserAndQuestion(
+                                telegramUser,
+                                question
+                        )
+                        .orElseGet(() ->
+                                UserAnswer.builder()
+                                        .telegramUser(telegramUser)
+                                        .question(question)
+                                        .build()
+                        );
+
+
+        userAnswer.setAnswerText(
+                request.getAnswerText()
         );
 
-        return answers.stream()
+        userAnswer.setSelectedOptionIds(
+                request.getSelectedOptionIds().toString()
+        );
+
+        userAnswer.setAnsweredAt(
+                LocalDateTime.now()
+        );
+
+
+        UserAnswer savedAnswer =
+                userAnswerRepository.save(
+                        userAnswer
+                );
+
+        return userAnswerMapper.toResponse(
+                savedAnswer
+        );
+    }
+
+
+    @Override
+    public List<UserAnswerResponse> getResults(
+            Long surveyId,
+            String status,
+            LocalDate from,
+            LocalDate to
+    ) {
+
+        LocalDateTime startDateTime =
+                from != null
+                        ? from.atStartOfDay()
+                        : null;
+
+        LocalDateTime endDateTime =
+                to != null
+                        ? to.atTime(LocalTime.MAX)
+                        : null;
+
+
+        List<UserAnswer> answers =
+                userAnswerRepository.findFilteredAnswers(
+                        surveyId,
+                        status,
+                        startDateTime,
+                        endDateTime
+                );
+
+
+        return answers
+                .stream()
                 .map(userAnswerMapper::toResponse)
                 .toList();
     }

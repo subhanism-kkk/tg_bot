@@ -10,5 +10,6 @@ public class SurveyCreateRequest {
     private String title;
 
     private String description;
+    private Long orderIndex;
     private Boolean isActive = true;
 }

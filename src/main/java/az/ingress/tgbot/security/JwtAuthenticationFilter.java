@@ -47,6 +47,11 @@ public class JwtAuthenticationFilter
         String authHeader =
                 request.getHeader("Authorization");
 
+        /*
+         * No JWT.
+         *
+         * Let Spring Security handle the request.
+         */
         if (authHeader == null
                 || !authHeader.startsWith("Bearer ")) {
 
@@ -63,6 +68,10 @@ public class JwtAuthenticationFilter
 
         try {
 
+            /*
+             * Check token validity and make sure
+             * this is an ACCESS token.
+             */
             if (!jwtService.isTokenValid(token)
                     || !jwtService.isAccessToken(token)) {
 
@@ -74,15 +83,24 @@ public class JwtAuthenticationFilter
                 return;
             }
 
+            /*
+             * Extract username from JWT.
+             */
             String username =
                     jwtService.extractUsername(token);
 
+            /*
+             * Load the current user from DB.
+             *
+             * This is important because role and active
+             * status can change after the JWT was issued.
+             */
             RegisteredUser user =
                     registeredUserRepository
                             .findByUsernameIgnoreCase(username)
                             .orElse(null);
 
-            if (user == null || !user.isActive()) {
+            if (user == null) {
 
                 filterChain.doFilter(
                         request,
@@ -92,6 +110,23 @@ public class JwtAuthenticationFilter
                 return;
             }
 
+            /*
+             * Inactive users must immediately lose access,
+             * even if they still have a valid JWT.
+             */
+            if (!user.isActive()) {
+
+                filterChain.doFilter(
+                        request,
+                        response
+                );
+
+                return;
+            }
+
+            /*
+             * Validate JWT against the current user.
+             */
             if (!jwtService.isTokenValid(
                     token,
                     user
@@ -105,16 +140,23 @@ public class JwtAuthenticationFilter
                 return;
             }
 
-            String role =
-                    user.getRole().name();
+            /*
+             * ADMIN -> ROLE_ADMIN
+             * OPERATOR -> ROLE_OPERATOR
+             */
+            String authority =
+                    "ROLE_" + user.getRole().name();
 
             List<SimpleGrantedAuthority> authorities =
                     List.of(
                             new SimpleGrantedAuthority(
-                                    "ROLE_" + role
+                                    authority
                             )
                     );
 
+            /*
+             * Create authenticated Spring Security user.
+             */
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
                             user,
@@ -129,10 +171,16 @@ public class JwtAuthenticationFilter
 
             SecurityContextHolder
                     .getContext()
-                    .setAuthentication(authentication);
+                    .setAuthentication(
+                            authentication
+                    );
 
         } catch (Exception e) {
 
+            /*
+             * Never leave a partially authenticated
+             * SecurityContext behind.
+             */
             SecurityContextHolder
                     .clearContext();
         }

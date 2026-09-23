@@ -32,17 +32,32 @@ public class UserAnswer extends BaseIdEntity {
     @JoinColumn(name = "question_id", nullable = false)
     private Question question;
 
-    @Column(name = "answer_text", columnDefinition = "NVARCHAR(MAX)")
+    @Column(
+            name = "answer_text",
+            columnDefinition = "NVARCHAR(MAX)"
+    )
     private String answerText;
 
-    @Column(name = "selected_option_ids", columnDefinition = "NVARCHAR(MAX)")
-    private String selectedOptionIds; // Holds JSON array string for RADIO/CHECKBOX (e.g. "[1, 2]")
+    @Column(
+            name = "selected_option_ids",
+            columnDefinition = "NVARCHAR(MAX)"
+    )
+    private String selectedOptionIds;
 
-    @Column(name = "answered_at", nullable = false, updatable = false)
+    @Column(
+            name = "answered_at",
+            nullable = false
+    )
     private LocalDateTime answeredAt;
+
 
     @PrePersist
     protected void onCreate() {
+        this.answeredAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
         this.answeredAt = LocalDateTime.now();
     }
 }

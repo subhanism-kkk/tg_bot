@@ -2,6 +2,7 @@ package az.ingress.tgbot.service.impl;
 
 import az.ingress.tgbot.dto.telegramUser.TelegramUserResponse;
 import az.ingress.tgbot.entity.TelegramUser;
+import az.ingress.tgbot.enums.RegistrationStatus;
 import az.ingress.tgbot.exception.ResourceNotFoundException;
 import az.ingress.tgbot.mapper.TelegramUserMapper;
 import az.ingress.tgbot.repository.TelegramUserRepository;
@@ -9,6 +10,7 @@ import az.ingress.tgbot.service.TelegramUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.telegram.telegrambots.meta.api.objects.User;
 
 import java.util.List;
 
@@ -38,4 +40,30 @@ public class TelegramUserServiceImpl implements TelegramUserService {
         return repository.findAll().stream()
                 .map(mapper::toResponse)
                 .toList();    }
+
+    @Override
+    @Transactional
+    public TelegramUser saveOrUpdateTelegramUser(User tgUser) {
+        if (tgUser == null) {
+            return null;
+        }
+
+        return repository.findByChatId(tgUser.getId())
+                .map(existingUser -> {
+                    existingUser.setUsername(tgUser.getUserName());
+                    existingUser.setFirstName(tgUser.getFirstName());
+                    existingUser.setLastName(tgUser.getLastName());
+                    return repository.save(existingUser);
+                })
+                .orElseGet(() -> {
+                    TelegramUser newUser = TelegramUser.builder()
+                            .chatId(tgUser.getId())
+                            .username(tgUser.getUserName())
+                            .firstName(tgUser.getFirstName())
+                            .lastName(tgUser.getLastName())
+                            .registrationStatus(RegistrationStatus.NOT_STARTED)
+                            .build();
+                    return repository.save(newUser);
+                });
+    }
 }

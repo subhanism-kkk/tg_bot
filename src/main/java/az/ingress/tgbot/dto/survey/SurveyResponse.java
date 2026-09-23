@@ -15,6 +15,7 @@ public class SurveyResponse {
     private String title;
     private String description;
     private Boolean isActive;
+    private Long orderIndex;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private List<StepResponse> steps;

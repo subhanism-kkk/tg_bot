@@ -27,6 +27,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.Keyboard
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -47,21 +48,27 @@ public class DynamicSurveyEngine {
     private final UserAnswerRepository answerRepository;
 
 
+    // START
     @Transactional
     public SendMessage handleStart(Long chatId) {
         return handleStartMenu(chatId);
     }
 
+
     public SendMessage handleStartMenu(Long chatId) {
+
         SendMessage message = new SendMessage();
+
         message.setChatId(String.valueOf(chatId));
         message.setText("👋 Welcome! Please choose an option:");
 
         InlineKeyboardButton adminButton = new InlineKeyboardButton();
+
         adminButton.setText("⚙️ Admin Panel");
         adminButton.setCallbackData("ADMIN_PANEL");
 
         InlineKeyboardButton surveyButton = new InlineKeyboardButton();
+
         surveyButton.setText("📝 Start Survey");
         surveyButton.setCallbackData("START_SURVEY");
 
@@ -74,89 +81,195 @@ public class DynamicSurveyEngine {
         return message;
     }
 
+
+    // ==========================================================
+    // START SURVEY
+    // ==========================================================
+
     @Transactional
     public SendMessage startSurvey(Long chatId) {
+
         TelegramUser user = userRepository.findByChatId(chatId).orElseGet(() -> userRepository.save(TelegramUser.builder().chatId(chatId).registrationStatus(RegistrationStatus.IN_PROGRESS).build()));
 
-        Optional<Survey> activeSurveyOpt = surveyRepository.findFirstByIsActiveTrueOrderByIdDesc();
 
-        if (activeSurveyOpt.isEmpty()) {
-            return message(chatId, "⚠️ There are no active surveys available right now.");
-        }
-
-        Survey survey = activeSurveyOpt.get();
-
-        List<Step> steps = stepRepository.findBySurveyIdAndIsActiveTrueOrderByOrderIndexAsc(survey.getId());
-
-        if (steps.isEmpty()) {
-            return message(chatId, "⚠️ This survey has no active steps.");
-        }
-
-        if (user.getRegistrationStatus() == RegistrationStatus.IN_PROGRESS && user.getCurrentQuestion() != null) {
+        /*
+         * Resume existing survey/question if user
+         * already has an active session.
+         */
+        if (user.getRegistrationStatus() == RegistrationStatus.IN_PROGRESS && user.getCurrentSurvey() != null && user.getCurrentQuestion() != null) {
 
             return renderQuestion(chatId, user.getCurrentQuestion(), user);
         }
 
-        Question firstQuestion = findFirstQuestion(steps);
 
-        if (firstQuestion == null) {
-            return message(chatId, "⚠️ This survey has no questions available.");
+        /*
+         * Find active surveys.
+         */
+        List<Survey> surveys = surveyRepository.findByIsActiveTrueOrderByOrderIndexAsc();
+
+        if (surveys.isEmpty()) {
+
+            return message(chatId, "⚠️ There are no active surveys available right now.");
         }
 
+
+        Survey firstSurvey = null;
+        Question firstQuestion = null;
+
+
+        /*
+         * Find first active survey
+         * that actually contains a question.
+         */
+        for (Survey survey : surveys) {
+
+            List<Step> steps = stepRepository.findBySurveyIdAndIsActiveTrueOrderByOrderIndexAsc(survey.getId());
+
+            if (steps.isEmpty()) {
+                continue;
+            }
+
+            Question question = findFirstQuestion(steps);
+
+            if (question != null) {
+
+                firstSurvey = survey;
+                firstQuestion = question;
+
+                break;
+            }
+        }
+
+
+        if (firstSurvey == null || firstQuestion == null) {
+
+            return message(chatId, "⚠️ There are no questions available in the active surveys.");
+        }
+
+
+        /*
+         * Save survey session.
+         */
+        user.setCurrentSurvey(firstSurvey);
         user.setCurrentStep(firstQuestion.getStep());
         user.setCurrentQuestion(firstQuestion);
         user.setRegistrationStatus(RegistrationStatus.IN_PROGRESS);
 
         clearCheckboxSelection(user, null);
+
         userRepository.save(user);
 
         return renderQuestion(chatId, firstQuestion, user);
     }
 
 
+    // ==========================================================
+    // NEXT QUESTION
+    // ==========================================================
+
     @Transactional
     public SendMessage processNextQuestion(Long chatId) {
+
         TelegramUser user = userRepository.findByChatId(chatId).orElseThrow(() -> new IllegalStateException("Telegram user not found: " + chatId));
 
-        Optional<Survey> activeSurveyOpt = surveyRepository.findFirstByIsActiveTrueOrderByIdDesc();
+        Survey currentSurvey = user.getCurrentSurvey();
 
-        if (activeSurveyOpt.isEmpty()) {
-            return message(chatId, "⚠️ There are no active surveys available right now.");
+        if (currentSurvey == null) {
+
+            return message(chatId, "⚠️ No active survey session was found. Please start the survey again.");
         }
 
-        Survey survey = activeSurveyOpt.get();
 
-        List<Step> steps = stepRepository.findBySurveyIdAndIsActiveTrueOrderByOrderIndexAsc(survey.getId());
+        /*
+         * Continue inside current survey.
+         */
+        List<Step> currentSurveySteps = stepRepository.findBySurveyIdAndIsActiveTrueOrderByOrderIndexAsc(currentSurvey.getId());
 
-        if (steps.isEmpty()) {
-            return message(chatId, "⚠️ This survey has no active steps.");
-        }
+        Question nextQuestion = findNextQuestion(currentSurveySteps, user);
 
-        Question nextQuestion = findNextQuestion(steps, user);
+        if (nextQuestion != null) {
 
-        if (nextQuestion == null) {
-            user.setRegistrationStatus(RegistrationStatus.COMPLETED);
-            user.setCurrentStep(null);
-            user.setCurrentQuestion(null);
+            user.setCurrentStep(nextQuestion.getStep());
 
-            clearCheckboxSelection(user, null);
+            user.setCurrentQuestion(nextQuestion);
+
             userRepository.save(user);
 
-            SendMessage completionMsg = message(chatId, "🎉 Thank you! You have completed the survey.");
-
-            completionMsg.setReplyMarkup(new ReplyKeyboardRemove(true));
-
-            return completionMsg;
+            return renderQuestion(chatId, nextQuestion, user);
         }
 
-        user.setCurrentStep(nextQuestion.getStep());
-        user.setCurrentQuestion(nextQuestion);
+
+        /*
+         * Current survey finished.
+         * Find next active survey.
+         */
+        Survey nextSurvey = findNextSurvey(currentSurvey);
+
+        while (nextSurvey != null) {
+
+            List<Step> nextSurveySteps = stepRepository.findBySurveyIdAndIsActiveTrueOrderByOrderIndexAsc(nextSurvey.getId());
+
+            Question firstQuestion = findFirstQuestion(nextSurveySteps);
+
+            /*
+             * Skip empty surveys.
+             */
+            if (firstQuestion != null) {
+
+                user.setCurrentSurvey(nextSurvey);
+                user.setCurrentStep(firstQuestion.getStep());
+                user.setCurrentQuestion(firstQuestion);
+
+                user.setRegistrationStatus(RegistrationStatus.IN_PROGRESS);
+
+                clearCheckboxSelection(user, null);
+
+                userRepository.save(user);
+
+                return renderQuestion(chatId, firstQuestion, user);
+            }
+
+            nextSurvey = findNextSurvey(nextSurvey);
+        }
+
+
+        /*
+         * All surveys completed.
+         */
+        user.setRegistrationStatus(RegistrationStatus.COMPLETED);
+
+        user.setCurrentSurvey(null);
+        user.setCurrentStep(null);
+        user.setCurrentQuestion(null);
+
+        clearCheckboxSelection(user, null);
+
         userRepository.save(user);
 
-        return renderQuestion(chatId, nextQuestion, user);
+        SendMessage completionMsg = message(chatId, "🎉 Thank you! You have completed all surveys.");
+
+        completionMsg.setReplyMarkup(new ReplyKeyboardRemove(true));
+
+        return completionMsg;
     }
 
+
+    // ==========================================================
+    // SURVEY NAVIGATION
+    // ==========================================================
+
+    private Survey findNextSurvey(Survey currentSurvey) {
+
+        if (currentSurvey == null || currentSurvey.getOrderIndex() == null) {
+            return null;
+        }
+
+        return surveyRepository.findFirstByIsActiveTrueAndOrderIndexGreaterThanOrderByOrderIndexAsc(currentSurvey.getOrderIndex()).orElse(null);
+    }
+
+
     private Question findFirstQuestion(List<Step> steps) {
+
         for (Step step : steps) {
 
             List<Question> questions = questionRepository.findByStepIdOrderByOrderIndexAsc(step.getId());
@@ -169,6 +282,7 @@ public class DynamicSurveyEngine {
         return null;
     }
 
+
     public Question findNextQuestion(List<Step> steps, TelegramUser user) {
 
         if (user.getCurrentQuestion() == null) {
@@ -176,25 +290,40 @@ public class DynamicSurveyEngine {
         }
 
         Step currentStep = user.getCurrentStep();
+
         Question currentQuestion = user.getCurrentQuestion();
 
-        if (currentStep == null) {
+        if (currentStep == null || currentQuestion == null) {
             return null;
         }
 
+
+        /*
+         * Next question in same step.
+         */
         Optional<Question> nextQuestionInSameStep = questionRepository.findFirstByStepIdAndOrderIndexGreaterThanOrderByOrderIndexAsc(currentStep.getId(), currentQuestion.getOrderIndex());
 
         if (nextQuestionInSameStep.isPresent()) {
+
             return nextQuestionInSameStep.get();
         }
 
+
+        /*
+         * Next active step.
+         */
         List<Step> nextSteps = stepRepository.findBySurveyIdAndIsActiveTrueAndOrderIndexGreaterThanOrderByOrderIndexAsc(currentStep.getSurvey().getId(), currentStep.getOrderIndex());
 
+
+        /*
+         * Skip empty steps.
+         */
         for (Step nextStep : nextSteps) {
 
             List<Question> questions = questionRepository.findByStepIdOrderByOrderIndexAsc(nextStep.getId());
 
             if (!questions.isEmpty()) {
+
                 return questions.getFirst();
             }
         }
@@ -202,54 +331,76 @@ public class DynamicSurveyEngine {
         return null;
     }
 
+
+    // ==========================================================
+    // TEXT ANSWERS
+    // ==========================================================
+
     @Transactional
     public SendMessage handleTextMessage(Long chatId, String textInput) {
 
         String answerText = textInput == null ? "" : textInput.trim();
 
+
         if ("/start".equalsIgnoreCase(answerText)) {
+
             return handleStart(chatId);
         }
 
+
         TelegramUser user = userRepository.findByChatId(chatId).orElseGet(() -> userRepository.save(TelegramUser.builder().chatId(chatId).registrationStatus(RegistrationStatus.IN_PROGRESS).build()));
+
 
         Question question = user.getCurrentQuestion();
 
         if (question == null) {
+
             return message(chatId, "You have no active question. Send /start to begin or restart the survey.");
         }
 
+
         if (isMenuOrSystemCommand(answerText)) {
+
             return message(chatId, "⚠️ Please answer the active question before using navigation buttons.");
         }
+
 
         if (question.getType() == QuestionType.RADIO || question.getType() == QuestionType.CHECKBOX || question.getType() == QuestionType.PHONE) {
 
             return message(chatId, "⚠️ Please answer the current question using the provided buttons.");
         }
 
+
         if (Boolean.TRUE.equals(question.getIsRequired()) && answerText.isBlank()) {
 
             return message(chatId, "⚠️ This question is required. Please provide an answer.");
         }
 
+
         if (answerText.isBlank()) {
+
             saveTextAnswer(user, question, null);
+
             return processNextQuestion(chatId);
         }
+
 
         String validationError = validateTextAnswer(question, answerText);
 
         if (validationError != null) {
+
             return message(chatId, validationError);
         }
+
 
         saveTextAnswer(user, question, answerText);
 
         return processNextQuestion(chatId);
     }
 
+
     private boolean isMenuOrSystemCommand(String text) {
+
         if (text == null || text.isBlank()) {
             return false;
         }
@@ -259,33 +410,46 @@ public class DynamicSurveyEngine {
         return lower.contains("menu") || lower.contains("help") || lower.contains("settings") || lower.startsWith("/");
     }
 
+
     private String validateTextAnswer(Question question, String answerText) {
 
         if (question.getValidationRegex() != null && !question.getValidationRegex().isBlank()) {
 
             try {
+
                 if (!answerText.matches(question.getValidationRegex())) {
+
                     return "⚠️ Invalid input format. Please try again.";
                 }
+
             } catch (Exception exception) {
+
                 return "⚠️ This question has an invalid validation configuration.";
             }
         }
 
+
         if (question.getType() == QuestionType.NUMBER) {
 
             try {
+
                 Double.parseDouble(answerText);
+
             } catch (NumberFormatException exception) {
+
                 return "⚠️ Please enter a valid number.";
             }
         }
 
+
         if (question.getType() == QuestionType.DATE) {
 
             try {
+
                 LocalDate.parse(answerText);
+
             } catch (Exception exception) {
+
                 return "⚠️ Please enter a valid date in YYYY-MM-DD format.";
             }
         }
@@ -293,6 +457,14 @@ public class DynamicSurveyEngine {
         return null;
     }
 
+
+    /**
+     * Saves TEXT / DATE / NUMBER / PHONE answers.
+     * <p>
+     * IMPORTANT:
+     * answeredAt is explicitly updated every time
+     * the user submits the answer.
+     */
     private void saveTextAnswer(TelegramUser user, Question question, String answerText) {
 
         UserAnswer answer = answerRepository.findFirstByTelegramUserAndQuestion(user, question).orElseGet(() -> UserAnswer.builder().telegramUser(user).question(question).build());
@@ -300,85 +472,125 @@ public class DynamicSurveyEngine {
         answer.setAnswerText(answerText);
         answer.setSelectedOptionIds(null);
 
+        // IMPORTANT
+        answer.setAnsweredAt(LocalDateTime.now());
+
         answerRepository.save(answer);
     }
+
+
+    // ==========================================================
+    // CALLBACKS
+    // ==========================================================
 
     @Transactional
     public BotApiMethod<?> handleCallback(Long chatId, Integer messageId, String callbackData) {
 
         TelegramUser user = userRepository.findByChatId(chatId).orElseThrow(() -> new IllegalStateException("Telegram user not found: " + chatId));
 
+
         if (callbackData == null || callbackData.isBlank()) {
+
             return message(chatId, "⚠️ Invalid action.");
         }
 
+
         if ("ADMIN_PANEL".equals(callbackData)) {
+
             return message(chatId, "⚙️ Admin Panel:\nhttp://localhost:5173/login");
         }
 
+
         if ("START_SURVEY".equals(callbackData)) {
+
             return startSurvey(chatId);
         }
+
 
         Question currentQuestion = user.getCurrentQuestion();
 
         if (currentQuestion == null) {
+
             return handleStart(chatId);
         }
 
+
         if (callbackData.startsWith("OPTION:")) {
+
             return handleOptionCallback(chatId, messageId, user, currentQuestion, callbackData);
         }
 
+
         if (callbackData.startsWith("SUBMIT_CHECKBOX:")) {
+
             return handleCheckboxSubmit(chatId, messageId, user, currentQuestion, callbackData);
         }
 
+
         return message(chatId, "⚠️ Unknown action.");
     }
+
+
+    // ==========================================================
+    // RADIO / CHECKBOX
+    // ==========================================================
 
     private BotApiMethod<?> handleOptionCallback(Long chatId, Integer messageId, TelegramUser user, Question currentQuestion, String callbackData) {
 
         String[] parts = callbackData.split(":");
 
         if (parts.length != 3) {
+
             return message(chatId, "⚠️ Invalid option.");
         }
+
 
         Long optionId;
         Long questionId;
 
         try {
+
             optionId = Long.valueOf(parts[1]);
+
             questionId = Long.valueOf(parts[2]);
+
         } catch (NumberFormatException exception) {
+
             return message(chatId, "⚠️ Invalid option.");
         }
 
+
         if (!currentQuestion.getId().equals(questionId)) {
+
             return message(chatId, "⚠️ This question is no longer active.");
         }
+
 
         if (currentQuestion.getType() == QuestionType.RADIO) {
 
             QuestionOption selectedOption = findQuestionOption(currentQuestion, optionId);
 
             if (selectedOption == null) {
+
                 return message(chatId, "⚠️ Invalid option.");
             }
+
 
             saveRadioAnswer(user, currentQuestion, selectedOption);
 
             return processNextQuestion(chatId);
         }
 
+
         if (currentQuestion.getType() == QuestionType.CHECKBOX) {
 
             QuestionOption selectedOption = findQuestionOption(currentQuestion, optionId);
 
             if (selectedOption == null) {
+
                 return message(chatId, "⚠️ Invalid option.");
             }
+
 
             toggleCheckboxSelection(user, currentQuestion, optionId);
 
@@ -387,52 +599,74 @@ public class DynamicSurveyEngine {
             return renderCheckboxQuestionEdit(chatId, messageId, currentQuestion, selectedIds);
         }
 
+
         return message(chatId, "⚠️ This question does not support options.");
     }
+
 
     private void saveRadioAnswer(TelegramUser user, Question question, QuestionOption option) {
 
         UserAnswer answer = answerRepository.findFirstByTelegramUserAndQuestion(user, question).orElseGet(() -> UserAnswer.builder().telegramUser(user).question(question).build());
 
         answer.setAnswerText(option.getText());
+
         answer.setSelectedOptionIds(String.valueOf(option.getId()));
+
+        // IMPORTANT
+        answer.setAnsweredAt(LocalDateTime.now());
 
         answerRepository.save(answer);
     }
+
 
     private BotApiMethod<?> handleCheckboxSubmit(Long chatId, Integer messageId, TelegramUser user, Question currentQuestion, String callbackData) {
 
         String[] parts = callbackData.split(":");
 
         if (parts.length != 2) {
+
             return message(chatId, "⚠️ Invalid checkbox action.");
         }
+
 
         Long questionId;
 
         try {
+
             questionId = Long.valueOf(parts[1]);
+
         } catch (NumberFormatException exception) {
+
             return message(chatId, "⚠️ Invalid checkbox action.");
         }
 
+
         if (!currentQuestion.getId().equals(questionId)) {
+
             return message(chatId, "⚠️ This question is no longer active.");
         }
 
+
         Set<Long> selectedIds = getSelectedCheckboxOptions(user, currentQuestion);
+
 
         if (Boolean.TRUE.equals(currentQuestion.getIsRequired()) && selectedIds.isEmpty()) {
 
             return renderCheckboxQuestionEdit(chatId, messageId, currentQuestion, selectedIds, "⚠️ Please select at least one option.");
         }
 
+
         String selectedOptionIds = selectedIds.stream().sorted().map(String::valueOf).collect(Collectors.joining(","));
+
 
         UserAnswer answer = answerRepository.findFirstByTelegramUserAndQuestion(user, currentQuestion).orElseGet(() -> UserAnswer.builder().telegramUser(user).question(currentQuestion).build());
 
         answer.setAnswerText(null);
+
         answer.setSelectedOptionIds(selectedOptionIds);
+
+        // IMPORTANT
+        answer.setAnsweredAt(LocalDateTime.now());
 
         answerRepository.save(answer);
 
@@ -441,20 +675,31 @@ public class DynamicSurveyEngine {
         return processNextQuestion(chatId);
     }
 
+
+    // ==========================================================
+    // CHECKBOX STATE
+    // ==========================================================
+
     private Set<Long> getSelectedCheckboxOptions(TelegramUser user, Question question) {
 
         String draft = user.getDraftCheckboxSelections();
 
         if (draft == null || draft.isBlank()) {
+
             return new HashSet<>();
         }
 
+
         try {
+
             return Arrays.stream(draft.split(",")).filter(value -> !value.isBlank()).map(Long::valueOf).collect(Collectors.toCollection(HashSet::new));
+
         } catch (NumberFormatException exception) {
+
             return new HashSet<>();
         }
     }
+
 
     private void setSelectedCheckboxOptions(TelegramUser user, Question question, Set<Long> selected) {
 
@@ -465,24 +710,31 @@ public class DynamicSurveyEngine {
         userRepository.save(user);
     }
 
+
     private void toggleCheckboxSelection(TelegramUser user, Question currentQuestion, Long optionId) {
 
         Set<Long> selected = getSelectedCheckboxOptions(user, currentQuestion);
 
         if (selected.contains(optionId)) {
+
             selected.remove(optionId);
+
         } else {
+
             selected.add(optionId);
         }
 
         setSelectedCheckboxOptions(user, currentQuestion, selected);
     }
 
+
     private void clearCheckboxSelection(TelegramUser user, Question question) {
 
         user.setDraftCheckboxSelections(null);
+
         userRepository.save(user);
     }
+
 
     private QuestionOption findQuestionOption(Question question, Long optionId) {
 
@@ -493,18 +745,27 @@ public class DynamicSurveyEngine {
         return question.getOptions().stream().filter(option -> option.getId().equals(optionId)).findFirst().orElse(null);
     }
 
+
+    // ==========================================================
+    // RENDER QUESTION
+    // ==========================================================
+
     private SendMessage renderQuestion(Long chatId, Question question, TelegramUser user) {
 
         SendMessage message = new SendMessage();
 
         message.setChatId(String.valueOf(chatId));
+
         message.setText(question.getText());
 
+
         if (question.getType() == QuestionType.RADIO) {
+
             message.setReplyMarkup(buildRadioKeyboard(question));
 
             return message;
         }
+
 
         if (question.getType() == QuestionType.CHECKBOX) {
 
@@ -515,14 +776,18 @@ public class DynamicSurveyEngine {
             return message;
         }
 
+
         if (question.getType() == QuestionType.PHONE) {
+
             message.setReplyMarkup(buildPhoneKeyboard());
 
             return message;
         }
 
+
         return message;
     }
+
 
     private InlineKeyboardMarkup buildRadioKeyboard(Question question) {
 
@@ -542,12 +807,14 @@ public class DynamicSurveyEngine {
             }
         }
 
+
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
 
         markup.setKeyboard(rows);
 
         return markup;
     }
+
 
     private InlineKeyboardMarkup buildCheckboxKeyboard(Question question, Set<Long> selectedIds) {
 
@@ -569,6 +836,7 @@ public class DynamicSurveyEngine {
             }
         }
 
+
         InlineKeyboardButton continueButton = new InlineKeyboardButton();
 
         continueButton.setText("✅ Continue");
@@ -577,6 +845,7 @@ public class DynamicSurveyEngine {
 
         rows.add(List.of(continueButton));
 
+
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
 
         markup.setKeyboard(rows);
@@ -584,10 +853,12 @@ public class DynamicSurveyEngine {
         return markup;
     }
 
+
     private EditMessageText renderCheckboxQuestionEdit(Long chatId, Integer messageId, Question question, Set<Long> selectedIds) {
 
         return renderCheckboxQuestionEdit(chatId, messageId, question, selectedIds, null);
     }
+
 
     private EditMessageText renderCheckboxQuestionEdit(Long chatId, Integer messageId, Question question, Set<Long> selectedIds, String errorMessage) {
 
@@ -597,9 +868,11 @@ public class DynamicSurveyEngine {
 
         editMessage.setMessageId(messageId);
 
+
         String text = question.getText();
 
         if (errorMessage != null) {
+
             text = errorMessage + "\n\n" + question.getText();
         }
 
@@ -609,6 +882,11 @@ public class DynamicSurveyEngine {
 
         return editMessage;
     }
+
+
+    // ==========================================================
+    // PHONE
+    // ==========================================================
 
     private ReplyKeyboardMarkup buildPhoneKeyboard() {
 
@@ -620,14 +898,17 @@ public class DynamicSurveyEngine {
 
         row.add(contactButton);
 
+
         ReplyKeyboardMarkup markup = new ReplyKeyboardMarkup();
 
         markup.setResizeKeyboard(true);
         markup.setOneTimeKeyboard(true);
+
         markup.setKeyboard(List.of(row));
 
         return markup;
     }
+
 
     @Transactional
     public SendMessage handlePhoneNumber(Long chatId, String phoneNumber) {
@@ -637,24 +918,35 @@ public class DynamicSurveyEngine {
         Question question = user.getCurrentQuestion();
 
         if (question == null) {
+
             return processNextQuestion(chatId);
         }
 
+
         if (question.getType() != QuestionType.PHONE) {
+
             return message(chatId, "⚠️ The current question is not asking for a phone number.");
         }
+
 
         if (phoneNumber == null || phoneNumber.isBlank()) {
 
             return message(chatId, "⚠️ Please share a valid phone number.");
         }
 
+
         String normalizedPhone = phoneNumber.trim();
+
 
         saveTextAnswer(user, question, normalizedPhone);
 
         return processNextQuestion(chatId);
     }
+
+
+    // ==========================================================
+    // MESSAGE
+    // ==========================================================
 
     private SendMessage message(Long chatId, String text) {
 

@@ -29,6 +29,9 @@ public class Survey extends BaseIdEntity {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = false;
 
+    @Column(name = "order_index", nullable = false)
+    private Long orderIndex = 0L;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

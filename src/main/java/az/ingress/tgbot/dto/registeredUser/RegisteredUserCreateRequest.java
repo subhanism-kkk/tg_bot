@@ -19,4 +19,7 @@ public class RegisteredUserCreateRequest {
 
     @NotNull(message = "Role is required")
     private UserRole role;
+
+    private Boolean active = true;
+
 }

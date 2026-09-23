@@ -8,8 +8,10 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.mapstruct.*;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface UserAnswerMapper {
@@ -33,9 +35,26 @@ public interface UserAnswerMapper {
         if (selectedOptionIds == null || selectedOptionIds.isBlank()) {
             return Collections.emptyList();
         }
+
+        String trimmed = selectedOptionIds.trim();
+
+        // 1. Try parsing as JSON array if it starts with '['
+        if (trimmed.startsWith("[")) {
+            try {
+                return OBJECT_MAPPER.readValue(trimmed, new TypeReference<List<Long>>() {});
+            } catch (JsonProcessingException ignored) {
+                // Fallback to manual parsing if JSON mapping fails
+            }
+        }
+
+        // 2. Parse comma-separated string (e.g., "1, 2", "1,2", or "1")
         try {
-            return OBJECT_MAPPER.readValue(selectedOptionIds, new TypeReference<List<Long>>() {});
-        } catch (JsonProcessingException e) {
+            return Arrays.stream(trimmed.replaceAll("[\\[\\]\"]", "").split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .map(Long::parseLong)
+                    .collect(Collectors.toList());
+        } catch (NumberFormatException e) {
             return Collections.emptyList();
         }
     }

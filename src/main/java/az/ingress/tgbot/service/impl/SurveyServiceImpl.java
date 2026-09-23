@@ -5,6 +5,7 @@ import az.ingress.tgbot.dto.survey.SurveyResponse;
 import az.ingress.tgbot.dto.survey.SurveyUpdateRequest;
 import az.ingress.tgbot.entity.Survey;
 import az.ingress.tgbot.exception.BadRequestException;
+import az.ingress.tgbot.exception.DuplicateResourceException;
 import az.ingress.tgbot.exception.ResourceAlreadyExistsException;
 import az.ingress.tgbot.exception.ResourceNotFoundException;
 import az.ingress.tgbot.mapper.SurveyMapper;
@@ -28,6 +29,7 @@ public class SurveyServiceImpl implements SurveyService {
     @Override
     @Transactional
     public SurveyResponse create(SurveyCreateRequest request) {
+
         String trimmedTitle = request.getTitle().trim();
 
         if (repository.existsByTitleIgnoreCase(trimmedTitle)) {
@@ -37,24 +39,54 @@ public class SurveyServiceImpl implements SurveyService {
         }
 
         Survey survey = mapper.toEntity(request);
+
         survey.setTitle(trimmedTitle);
 
+        if (survey.getOrderIndex() == null) {
+            survey.setOrderIndex(getNextOrderIndex());
+        }
+
+        if (repository.existsByOrderIndex(survey.getOrderIndex())) {
+            throw new DuplicateResourceException("Survey with the order index " + survey.getOrderIndex() + " already exits.");
+        }
+
         Survey saved = repository.save(survey);
+
         return mapper.toResponse(saved);
     }
 
     @Override
     @Transactional
     public SurveyResponse update(Long id, SurveyUpdateRequest request) {
+
         Survey survey = fetchSurvey(id);
-        if (repository.existsByTitleIgnoreCase(request.getTitle().trim())) {
-            throw new ResourceAlreadyExistsException(
-                    "Survey with the title '" + request.getTitle().trim() + "' already exists"
-            );
+
+        if (request.getTitle() != null) {
+
+            String trimmedTitle = request.getTitle().trim();
+
+            if (repository.existsByTitleIgnoreCaseAndIdNot(
+                    trimmedTitle,
+                    id
+            )) {
+                throw new ResourceAlreadyExistsException(
+                        "Survey with the title '" + trimmedTitle + "' already exists"
+                );
+            }
         }
+
+        if (repository.existsByOrderIndex(survey.getOrderIndex())) {
+            throw new DuplicateResourceException("Survey with the order index " + survey.getOrderIndex() + " already exits.");
+        }
+
         mapper.updateEntity(survey, request);
 
+        if (survey.getOrderIndex() == null) {
+            survey.setOrderIndex(getNextOrderIndex());
+        }
+
         Survey updated = repository.save(survey);
+
         return mapper.toResponse(updated);
     }
 
@@ -67,7 +99,7 @@ public class SurveyServiceImpl implements SurveyService {
     public List<SurveyResponse> getAll() {
 
         return repository.findAll(
-                        Sort.by(Sort.Direction.ASC, "id")
+                        Sort.by(Sort.Direction.ASC, "orderIndex")
                 )
                 .stream()
                 .map(mapper::toResponse)
@@ -77,38 +109,60 @@ public class SurveyServiceImpl implements SurveyService {
     @Override
     @Transactional
     public void delete(Long id) {
+
         Survey survey = fetchSurvey(id);
+
         repository.delete(survey);
     }
 
     @Override
     @Transactional
     public void activate(Long id) {
+
         Survey survey = fetchSurvey(id);
 
         if (Boolean.TRUE.equals(survey.getIsActive())) {
-            throw new BadRequestException("Survey is already active with id: " + id);
+            throw new BadRequestException(
+                    "Survey is already active with id: " + id
+            );
         }
 
         survey.setIsActive(true);
+
         repository.save(survey);
     }
 
     @Override
     @Transactional
     public void deactivate(Long id) {
+
         Survey survey = fetchSurvey(id);
 
         if (Boolean.FALSE.equals(survey.getIsActive())) {
-            throw new BadRequestException("Survey is already inactive with id: " + id);
+            throw new BadRequestException(
+                    "Survey is already inactive with id: " + id
+            );
         }
 
         survey.setIsActive(false);
+
         repository.save(survey);
     }
 
+    private Long getNextOrderIndex() {
+
+        return repository.findFirstByOrderByOrderIndexDesc()
+                .map(survey -> survey.getOrderIndex() + 1)
+                .orElse(1L);
+    }
+
     private Survey fetchSurvey(Long id) {
+
         return repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Survey not found with id: " + id));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Survey not found with id: " + id
+                        )
+                );
     }
 }

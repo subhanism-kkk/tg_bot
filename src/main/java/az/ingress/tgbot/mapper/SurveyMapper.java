@@ -6,7 +6,11 @@ import az.ingress.tgbot.dto.survey.SurveyUpdateRequest;
 import az.ingress.tgbot.entity.Survey;
 import org.mapstruct.*;
 
-@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE, uses = {StepMapper.class})
+@Mapper(
+        componentModel = "spring",
+        unmappedTargetPolicy = ReportingPolicy.IGNORE,
+        uses = {StepMapper.class}
+)
 public interface SurveyMapper {
 
     SurveyResponse toResponse(Survey entity);
@@ -15,8 +19,14 @@ public interface SurveyMapper {
     @Mapping(target = "steps", ignore = true)
     Survey toEntity(SurveyCreateRequest request);
 
-    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @BeanMapping(
+            nullValuePropertyMappingStrategy =
+                    NullValuePropertyMappingStrategy.IGNORE
+    )
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "steps", ignore = true)
-    void updateEntity(@MappingTarget Survey entity, SurveyUpdateRequest request);
+    void updateEntity(
+            @MappingTarget Survey entity,
+            SurveyUpdateRequest request
+    );
 }

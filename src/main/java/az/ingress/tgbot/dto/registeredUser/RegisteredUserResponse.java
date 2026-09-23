@@ -13,5 +13,6 @@ public class RegisteredUserResponse {
     private Long id;
     private String username;
     private UserRole role;
+    private boolean active;
     private LocalDateTime createdAt;
 }

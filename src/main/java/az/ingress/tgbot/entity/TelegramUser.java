@@ -46,6 +46,10 @@ public class TelegramUser {
     @JoinColumn(name = "current_question_id")
     private Question currentQuestion;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "current_survey_id")
+    private Survey currentSurvey;
+
     @Column(name = "draft_checkbox_selections")
     private String draftCheckboxSelections;
 
