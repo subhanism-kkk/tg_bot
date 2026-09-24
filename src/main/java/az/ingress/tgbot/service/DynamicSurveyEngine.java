@@ -82,9 +82,7 @@ public class DynamicSurveyEngine {
     }
 
 
-    // ==========================================================
     // START SURVEY
-    // ==========================================================
 
     @Transactional
     public SendMessage startSurvey(Long chatId) {
@@ -163,9 +161,7 @@ public class DynamicSurveyEngine {
     }
 
 
-    // ==========================================================
     // NEXT QUESTION
-    // ==========================================================
 
     @Transactional
     public SendMessage processNextQuestion(Long chatId) {
@@ -254,9 +250,7 @@ public class DynamicSurveyEngine {
     }
 
 
-    // ==========================================================
     // SURVEY NAVIGATION
-    // ==========================================================
 
     private Survey findNextSurvey(Survey currentSurvey) {
 
@@ -332,9 +326,7 @@ public class DynamicSurveyEngine {
     }
 
 
-    // ==========================================================
     // TEXT ANSWERS
-    // ==========================================================
 
     @Transactional
     public SendMessage handleTextMessage(Long chatId, String textInput) {
@@ -479,9 +471,7 @@ public class DynamicSurveyEngine {
     }
 
 
-    // ==========================================================
     // CALLBACKS
-    // ==========================================================
 
     @Transactional
     public BotApiMethod<?> handleCallback(Long chatId, Integer messageId, String callbackData) {
@@ -531,9 +521,7 @@ public class DynamicSurveyEngine {
     }
 
 
-    // ==========================================================
     // RADIO / CHECKBOX
-    // ==========================================================
 
     private BotApiMethod<?> handleOptionCallback(Long chatId, Integer messageId, TelegramUser user, Question currentQuestion, String callbackData) {
 
@@ -676,9 +664,7 @@ public class DynamicSurveyEngine {
     }
 
 
-    // ==========================================================
     // CHECKBOX STATE
-    // ==========================================================
 
     private Set<Long> getSelectedCheckboxOptions(TelegramUser user, Question question) {
 
@@ -746,9 +732,7 @@ public class DynamicSurveyEngine {
     }
 
 
-    // ==========================================================
     // RENDER QUESTION
-    // ==========================================================
 
     private SendMessage renderQuestion(Long chatId, Question question, TelegramUser user) {
 
@@ -884,9 +868,7 @@ public class DynamicSurveyEngine {
     }
 
 
-    // ==========================================================
     // PHONE
-    // ==========================================================
 
     private ReplyKeyboardMarkup buildPhoneKeyboard() {
 
@@ -944,9 +926,7 @@ public class DynamicSurveyEngine {
     }
 
 
-    // ==========================================================
     // MESSAGE
-    // ==========================================================
 
     private SendMessage message(Long chatId, String text) {
 

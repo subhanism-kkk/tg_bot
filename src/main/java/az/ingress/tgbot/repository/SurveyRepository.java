@@ -21,4 +21,6 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
     Optional<Survey> findFirstByOrderByOrderIndexDesc();
 
     boolean existsByOrderIndex(Long orderIndex);
+
+    boolean existsByOrderIndexAndIdNot(Long orderIndex, Long id);
 }

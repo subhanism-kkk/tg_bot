@@ -73,17 +73,24 @@ public class SurveyServiceImpl implements SurveyService {
                         "Survey with the title '" + trimmedTitle + "' already exists"
                 );
             }
+
+            survey.setTitle(trimmedTitle);
         }
 
-        if (repository.existsByOrderIndex(survey.getOrderIndex())) {
-            throw new DuplicateResourceException("Survey with the order index " + survey.getOrderIndex() + " already exits.");
+        if (request.getOrderIndex() != null &&
+                repository.existsByOrderIndexAndIdNot(
+                        request.getOrderIndex(),
+                        id
+                )) {
+
+            throw new DuplicateResourceException(
+                    "Survey with the order index "
+                            + request.getOrderIndex()
+                            + " already exists."
+            );
         }
 
         mapper.updateEntity(survey, request);
-
-        if (survey.getOrderIndex() == null) {
-            survey.setOrderIndex(getNextOrderIndex());
-        }
 
         Survey updated = repository.save(survey);
 
